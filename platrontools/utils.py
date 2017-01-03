@@ -4,6 +4,11 @@ import os
 import collections
 import hashlib
 
+try:
+    unicode = unicode
+except NameError:
+    unicode = str
+
 #######
 # API #
 #######
@@ -114,7 +119,10 @@ def dict_to_ordered(data):
 # http://vorushin.ru/blog/11-python-xml-serializer/ #
 #####################################################
 
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 from xml.etree.cElementTree import Element, ElementTree
 
 def to_xml(data, root='content'):
@@ -221,7 +229,7 @@ def to_dict(parent):
 try:
     from thread import get_ident as _get_ident
 except ImportError:
-    from dummy_thread import get_ident as _get_ident
+    from _dummy_thread import get_ident as _get_ident
 
 try:
     from _abcoll import KeysView, ValuesView, ItemsView
@@ -426,7 +434,7 @@ class BackportOrderedDict(dict):
         'Return state information for pickling'
         items = [[k, self[k]] for k in self]
         inst_dict = vars(self).copy()
-        for k in vars(OrderedDict()):
+        for k in vars(collections.OrderedDict()):
             inst_dict.pop(k, None)
         if inst_dict:
             return (self.__class__, (items,), inst_dict)
@@ -452,7 +460,7 @@ class BackportOrderedDict(dict):
         while comparison to a regular mapping is order-insensitive.
 
         '''
-        if isinstance(other, OrderedDict):
+        if isinstance(other, collections.OrderedDict):
             return len(self)==len(other) and self.items() == other.items()
         return dict.__eq__(self, other)
 
