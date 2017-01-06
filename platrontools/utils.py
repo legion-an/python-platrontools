@@ -9,110 +9,121 @@ try:
 except NameError:
     unicode = str
 
+
 #######
 # API #
 #######
 
 def parse_response(xml, secret, url):
-	from xml.etree import ElementTree
-	root = ElementTree.XML(xml)
-	data = to_dict(root)
-	if check_signature(data, secret, url):
-		return data
+    from xml.etree import ElementTree
+    root = ElementTree.XML(xml)
+    data = to_dict(root)
+    if check_signature(data, secret, url):
+        return data
+
 
 def create_response(data, secret, url):
-	data['pg_salt'] = salt()
-	result = dict_to_ordered(data)
-	result['pg_sig'] = create_signature(result, secret, url)
-	return to_xml(result, root='response')
+    data['pg_salt'] = salt()
+    result = dict_to_ordered(data)
+    result['pg_sig'] = create_signature(result, secret, url)
+    return to_xml(result, root='response')
+
 
 def check_signature(data, secret, url):
-	data = dict_to_ordered(data)
-	data_sig = data.pop('pg_sig')
-	test_sig = create_signature(data, secret, url)
-	# DEBUG:
-	# print "----"
-	# print data
-	# print "----"
-	# print data_sig
-	# print "----"
-	# print test_sig
-	# print "----"
-	return data_sig == test_sig
+    data = dict_to_ordered(data)
+    data_sig = data.pop('pg_sig')
+    test_sig = create_signature(data, secret, url)
+    # DEBUG:
+    # print "----"
+    # print data
+    # print "----"
+    # print data_sig
+    # print "----"
+    # print test_sig
+    # print "----"
+    return data_sig == test_sig
+
 
 #########
 # Utils #
 #########
 
 def md5(val):
-	md5 = hashlib.md5()
-	md5.update(val.encode('utf-8'))
-	return md5.hexdigest()
+    md5 = hashlib.md5()
+    md5.update(val.encode('utf-8'))
+    return md5.hexdigest()
+
 
 def salt():
-	import base64
-	return base64.urlsafe_b64encode(os.urandom(10)).replace('=', '')
+    import base64
+    return base64.urlsafe_b64encode(os.urandom(10)).replace('=', '')
+
 
 def url_last(url):
-	return url.split('/').pop()
+    return url.split('/').pop()
+
 
 def create_signature(data, secret, url):
-	if isinstance(data, collections.OrderedDict):
-		plain = dict_to_plain(data)
-	else:
-		plain = dict_to_plain(dict_to_ordered(data))
-	if not url is None:
-		plain.insert(0, url_last(url))
-	plain.append(secret)
-	# DEBUG:
-	# print u';'.join(plain)
-	return md5(u';'.join(plain))
+    if isinstance(data, collections.OrderedDict):
+        plain = dict_to_plain(data)
+    else:
+        plain = dict_to_plain(dict_to_ordered(data))
+    if not url is None:
+        plain.insert(0, url_last(url))
+    plain.append(secret)
+    # DEBUG:
+    # print u';'.join(plain)
+    return md5(u';'.join(plain))
+
 
 def create_request(data, secret, url, method='POST'):
-	"""
-	secret: секретный токен, строка
-	data: данные запроса, dict
-	method: 'GET' или 'POST', для 'GET' формируется urlencoded-строка,
-			для 'POST' запрос формируется в виде XML.
+    """
+    secret: секретный токен, строка
+    data: данные запроса, dict
+    method: 'GET' или 'POST', для 'GET' формируется urlencoded-строка,
+            для 'POST' запрос формируется в виде XML.
 
-	Пример::
+    Пример::
 
-		create_request({'pg_param1': 1}, secret="lalala")
+        create_request({'pg_param1': 1}, secret="lalala")
 
-	Результат объект dict c ключом ``pg_xml`` и значением::
+    Результат объект dict c ключом ``pg_xml`` и значением::
 
-		<?xml version="1.0" encoding="utf-8"?>
-		<request>
-			<pg_param1>1</pg_param1>
-			<pg_sig>74aa41a4f425d124a23c3a53a3140bdc15826</pg_sig>
-		</request>
-	"""
-	data['pg_salt'] = salt()
-	request = dict_to_ordered(data)
-	request['pg_sig'] = create_signature(request, secret, url)
-	if method in ('POST', 'XML'):
-		return {'pg_xml': to_xml(request, root='request')}
-	else:
-		return request
+        <?xml version="1.0" encoding="utf-8"?>
+        <request>
+            <pg_param1>1</pg_param1>
+            <pg_sig>74aa41a4f425d124a23c3a53a3140bdc15826</pg_sig>
+        </request>
+    """
+    data['pg_salt'] = salt()
+    request = dict_to_ordered(data)
+    request['pg_sig'] = create_signature(request, secret, url)
+    if method in ('POST', 'XML'):
+        return {'pg_xml': to_xml(request, root='request')}
+    else:
+        return request
+
 
 def dict_to_plain(data):
-	plain = []
-	for k, v in data.items():
-		if v is None:
-			plain.append('')
-		elif isinstance(v, dict):
-			plain.append(dict_to_plain(v))
-		else:
-			plain.append(unicode(v))
-	return plain
+    plain = []
+    for k, v in data.items():
+        if v is None:
+            plain.append('')
+        elif isinstance(v, dict):
+            plain.append(dict_to_plain(v))
+        else:
+            plain.append(unicode(v))
+    return plain
+
 
 def dict_to_ordered(data):
-	ordered = collections.OrderedDict
-	copy = ordered(sorted(data.items(), key=lambda t: t[0]))
-	for k, v in copy.items():
-		if isinstance(v, dict):
-			copy[k] = dict_to_ordered(v)
-	return copy
+    ordered = collections.OrderedDict
+    copy = ordered(sorted(data.items(), key=lambda t: t[0]))
+    for k, v in copy.items():
+        if isinstance(v, dict):
+            copy[k] = dict_to_ordered(v)
+    return copy
+
 
 #####################################################
 # Simple XML serializer:							#
@@ -125,33 +136,38 @@ except ImportError:
     from io import StringIO
 from xml.etree.cElementTree import Element, ElementTree
 
+
 def to_xml(data, root='content'):
-	content_elem = Element(root)
-	_to_xml(content_elem, data)
-	tree = ElementTree(content_elem)
-	f = StringIO()
-	tree.write(f, 'UTF-8')
-	return f.getvalue()
+    content_elem = Element(root)
+    _to_xml(content_elem, data)
+    tree = ElementTree(content_elem)
+    f = StringIO()
+    tree.write(f, 'UTF-8')
+    return f.getvalue()
+
 
 def _to_xml(parentem, data):
-	if isinstance(data, (list, tuple)):
-		_serialize_list(parentem, data)
-	elif isinstance(data, dict):
-		_serialize_dict(parentem, data)
-	else:
-		parentem.text = unicode(data)
+    if isinstance(data, (list, tuple)):
+        _serialize_list(parentem, data)
+    elif isinstance(data, dict):
+        _serialize_dict(parentem, data)
+    else:
+        parentem.text = unicode(data)
+
 
 def _serialize_list(parentem, data_list):
-	for i in data_list:
-		item_elem = Element('item')
-		parentem.append(item_elem)
-		_to_xml(item_elem, i)
+    for i in data_list:
+        item_elem = Element('item')
+        parentem.append(item_elem)
+        _to_xml(item_elem, i)
+
 
 def _serialize_dict(parentem, data_dict):
-	for k, v in data_dict.iteritems():
-		key_elem = Element(k)
-		parentem.append(key_elem)
-		_to_xml(key_elem, v)
+    for k, v in data_dict.iteritems():
+        key_elem = Element(k)
+        parentem.append(key_elem)
+        _to_xml(key_elem, v)
+
 
 #################################################################
 # Simple XML parser:											#
@@ -159,66 +175,67 @@ def _serialize_dict(parentem, data_dict):
 #################################################################
 
 def to_list(nodes):
-	li = []
-	for el in nodes:
-		if el:
-			# treat like dict
-			if len(el) == 1 or el[0].tag != el[1].tag:
-				li.append(to_dict(el))
-			# treat like list
-			elif el[0].tag == el[1].tag:
-				li.append(to_list(el))
-		elif el.text:
-			text = el.text.strip()
-			if text:
-				li.append(text)
-	return li
+    li = []
+    for el in nodes:
+        if el:
+            # treat like dict
+            if len(el) == 1 or el[0].tag != el[1].tag:
+                li.append(to_dict(el))
+            # treat like list
+            elif el[0].tag == el[1].tag:
+                li.append(to_list(el))
+        elif el.text:
+            text = el.text.strip()
+            if text:
+                li.append(text)
+    return li
 
 
 def to_dict(parent):
-	"""
-	Example usage::
+    """
+    Example usage::
 
-		>>> root = ElementsTree.parse('some.xml').getroot()
-		>>> di = to_dict(root)
+        >>> root = ElementsTree.parse('some.xml').getroot()
+        >>> di = to_dict(root)
 
-	Or, if you want to use an XML string::
+    Or, if you want to use an XML string::
 
-		>>> root = ElementsTree.XML(xml_string)
-		>>> di = to_dict(root)
-	"""
-	ordered = collections.OrderedDict
-	di = ordered()
-	if parent.items():
-		di.update(ordered(parent.items()))
-	for el in parent:
-		if len(el):
-			# treat like dict - we assume that if the first two tags
-			# in a series are different, then they are all different.
-			if len(el) == 1 or el[0].tag != el[1].tag:
-				ch = to_dict(el)
-				# if the tag has attributes, add those to the dict
-				if el.items():
-					ch.update(ordered(el.items()))
-			# treat like list - we assume that if the first two tags
-			# in a series are the same, then the rest are the same.
-			else:
-				# here, we put the list in dictionary; the key is the
-				# tag name the list els all share in common, and
-				# the value is the list itself 
-				ch = {el[0].tag: to_list(el)}
-			di.update({el.tag: ch})
-		# this assumes that if you've got an attribute in a tag,
-		# you won't be having any text. This may or may not be a 
-		# good idea -- time will tell. It works for the way we are
-		# currently doing XML configuration files...
-		elif el.items():
-			di.update({el.tag: ordered(el.items())})
-		# finally, if there are no child tags and no attributes, extract
-		# the text
-		else:
-			di.update({el.tag: el.text})
-	return di
+        >>> root = ElementsTree.XML(xml_string)
+        >>> di = to_dict(root)
+    """
+    ordered = collections.OrderedDict
+    di = ordered()
+    if parent.items():
+        di.update(ordered(parent.items()))
+    for el in parent:
+        if len(el):
+            # treat like dict - we assume that if the first two tags
+            # in a series are different, then they are all different.
+            if len(el) == 1 or el[0].tag != el[1].tag:
+                ch = to_dict(el)
+                # if the tag has attributes, add those to the dict
+                if el.items():
+                    ch.update(ordered(el.items()))
+            # treat like list - we assume that if the first two tags
+            # in a series are the same, then the rest are the same.
+            else:
+                # here, we put the list in dictionary; the key is the
+                # tag name the list els all share in common, and
+                # the value is the list itself
+                ch = {el[0].tag: to_list(el)}
+            di.update({el.tag: ch})
+        # this assumes that if you've got an attribute in a tag,
+        # you won't be having any text. This may or may not be a
+        # good idea -- time will tell. It works for the way we are
+        # currently doing XML configuration files...
+        elif el.items():
+            di.update({el.tag: ordered(el.items())})
+        # finally, if there are no child tags and no attributes, extract
+        # the text
+        else:
+            di.update({el.tag: el.text})
+    return di
+
 
 #######################
 # BackportOrderedDict #
@@ -236,8 +253,10 @@ try:
 except ImportError:
     pass
 
+
 class BackportOrderedDict(dict):
     'Dictionary that remembers insertion order'
+
     # An inherited dict maps keys to values.
     # The inherited dict provides __getitem__, __len__, __contains__, and get.
     # The remaining methods are order-aware.
@@ -259,7 +278,7 @@ class BackportOrderedDict(dict):
         try:
             self.__root
         except AttributeError:
-            self.__root = root = []                     # sentinel node
+            self.__root = root = []  # sentinel node
             root[:] = [root, root, None]
             self.__map = {}
         self.__update(*args, **kwds)
@@ -461,7 +480,7 @@ class BackportOrderedDict(dict):
 
         '''
         if isinstance(other, collections.OrderedDict):
-            return len(self)==len(other) and self.items() == other.items()
+            return len(self) == len(other) and self.items() == other.items()
         return dict.__eq__(self, other)
 
     def __ne__(self, other):
@@ -480,7 +499,9 @@ class BackportOrderedDict(dict):
     def viewitems(self):
         "od.viewitems() -> a set-like object providing a view on od's items"
         return ItemsView(self)
+
+
 ## end of http://code.activestate.com/recipes/576693/ }}}
 
 if not hasattr(collections, 'OrderedDict'):
-	collections.OrderedDict = BackportOrderedDict
+    collections.OrderedDict = BackportOrderedDict
