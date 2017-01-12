@@ -56,7 +56,7 @@ def md5(val):
 
 def salt():
     import base64
-    return base64.urlsafe_b64encode(os.urandom(10)).replace('=', '')
+    return base64.urlsafe_b64encode(os.urandom(10)).decode('utf-8').replace('=', '')
 
 
 def url_last(url):
