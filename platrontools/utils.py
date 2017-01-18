@@ -163,7 +163,7 @@ def _serialize_list(parentem, data_list):
 
 
 def _serialize_dict(parentem, data_dict):
-    for k, v in data_dict.iteritems():
+    for k, v in data_dict.items():
         key_elem = Element(k)
         parentem.append(key_elem)
         _to_xml(key_elem, v)
