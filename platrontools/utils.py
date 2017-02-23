@@ -133,7 +133,7 @@ def dict_to_ordered(data):
 try:
     from StringIO import StringIO
 except ImportError:
-    from io import StringIO
+    from io import BytesIO as StringIO
 from xml.etree.cElementTree import Element, ElementTree
 
 
